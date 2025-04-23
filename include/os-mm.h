@@ -23,6 +23,8 @@ struct vm_rg_struct {
    unsigned long rg_end;
 
    struct vm_rg_struct *rg_next;
+
+   int vmaid;        // ID for VMA
 };
 
 /*

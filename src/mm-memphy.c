@@ -158,39 +158,25 @@
     return 0;
  }
  
- int MEMPHY_dump(struct memphy_struct *mp)
- {
+int MEMPHY_dump(struct memphy_struct *mp) {
    /*TODO dump memphy contnt mp->storage
     *     for tracing the memory content
     */
  
-   /* #ifdef SYNC
-       pthread_mutex_lock(&mp->mutex);
- 
-    #endif
-       struct framephy_struct *fp = mp->used_fp_list;
-       int fpn;
-       while (fp != NULL){
-          fpn=fp->fpn;
-       printf("frame: %d----------------------\n", fpn);
-          int iter = 0;
-          for (iter; iter < PAGING_PAGESZ; iter++){
-             // BYTE *data;
-       
-             int phyaddr = (fpn << PAGING_ADDR_FPN_LOBIT) +iter;
-             if (mp->storage[phyaddr] == 0) continue;
- 
-             // MEMPHY_read(mp, phyaddr,data );
-             printf("address 0x%08x: %d\n", phyaddr, mp->storage[phyaddr]);
-          }
-          fp=fp->fp_next;
-       }
-    #ifdef SYNC
-       pthread_mutex_unlock(&mp->mutex);
- 
-    #endif*/
-       return 0;
- }
+   printf("===== PHYSICAL MEMORY DUMP =====\n");
+   
+   if (mp != NULL && mp->storage != NULL) {
+      for (int i = 0; i < mp->maxsz; i++) {
+         if (mp->storage[i] != 0) {
+            printf("BYTE %08X: %d\n", i, mp->storage[i]);
+         }
+      }
+   }
+
+   printf("===== PHYSICAL MEMORY END-DUMP =====\n");
+   printf("================================================================\n");
+   return 0;
+}
  
  int MEMPHY_put_freefp(struct memphy_struct *mp, int fpn)
  {

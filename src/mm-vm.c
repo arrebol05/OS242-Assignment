@@ -52,7 +52,7 @@
   */
  struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, int size, int alignedsz)
  {
-   struct vm_rg_struct * newrg;
+   struct vm_rg_struct *newrg;
    /* TODO retrive current vma to obtain newrg, current comment out due to compiler redundant warning*/
    //struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
  
@@ -62,6 +62,7 @@
    }
  
    int old_sbrk = cur_vma->sbrk;
+   alignedsz = PAGING_PAGE_ALIGNSZ(size);
  
    newrg = malloc(sizeof(struct vm_rg_struct));
    if (newrg == NULL) {
@@ -72,28 +73,7 @@
    // newrg->rg_start = ...
    // newrg->rg_end = ...
    */
- 
-   newrg->vmaid = vmaid;
- 
-   if(vmaid == 0) {
-     if (old_sbrk == cur_vma->vm_start && old_sbrk == cur_vma->vm_end) {
-       old_sbrk -= 1;
-     }
- 
-     newrg->rg_start = old_sbrk;
-     newrg->rg_end = PAGING_PAGE_ALIGNSZ(newrg->rg_start + size) - 1;
-   } else {
-     #ifdef MM_PAGING_HEAP_GODOWN
-       if (old_sbrk == cur_vma->vma_start && old_sbrk == cur_vm->vm_end) {
-         old_sbrk += 1;
-       }
- 
-       newrg->rg_start = old_sbrk;
- 
-       newrg->rg_end = ((old_sbrk - size) / PAGING_PAGESZ) * PAGING_PAGESZ;
-     #endif
-   }
- 
+
    cur_vma->sbrk = newrg->rg_end + 1; // Update sbrk to the next address after the allocated region
  
    return newrg;
@@ -112,14 +92,6 @@
  
    /* TODO validate the planned memory area is not overlapped */
  
-   if (vmaid == 0) {
-     vmastart = vmastart + 1;
-   } else {
-     #ifdef MM_PAGING_HEAP_GODOWN
-     vmastart = vmastart - 1;
-     #endif
-   }
- 
    struct vm_area_struct *vma = caller->mm->mmap;
  
    while (vma != NULL) {
@@ -127,12 +99,7 @@
        vma = vma->vm_next;
        continue;
      }
- 
-     if (vma->vm_end == vma->vm_start) {
-       vma = vma->vm_next;
-       continue;
-     }
- 
+
      if ((vmastart - (int)vma->vm_end >= 0) && (vmastart - (int)vma->vm_start <= 0)) {
        return -1;
      }
@@ -179,20 +146,26 @@
    //cur_vma->vm_end... 
    // inc_limit_ret...
  
+   if (area == NULL || cur_vma == NULL) {
+    return -1;
+   }
+
    int old_sbrk = cur_vma->sbrk;
- 
    if (vmaid == 0) {
      cur_vma->vm_end = PAGING_PAGE_ALIGNSZ(old_sbrk + inc_sz) - 1;
    } else {
      cur_vma->vm_end = ((old_sbrk - inc_sz) / PAGING_PAGESZ) * PAGING_PAGESZ;
    }
  
+   struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
+   if (newrg == NULL) {
+    return -1;
+   }
    newrg->rg_start = area->rg_start;
    newrg->rg_end = area->rg_end;
    newrg->rg_next = NULL;
  
-   if (vm_map_ram(caller, area->rg_start, area->rg_end, 
-                     old_end, incnumpage , newrg) < 0)
+   if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage , newrg) < 0)
      return -1; /* Map the memory to MEMRAM */
  
    return 0;
